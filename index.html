@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0620">
+<title>السبحة الذكية</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Orbitron:wght@600;800&family=Reem+Kufi:wght@500;700&display=swap">
+<style>
+/* Layout: one column, a glowing bead-ring tap target in the centre, rosary beads that slide on every tap. Deliberately single-theme (neon night). */
+:root {
+  --bg: #0a0620;
+  --surface: rgba(255,255,255,.055);
+  --line: rgba(255,255,255,.11);
+  --fg: #f5f1ff;
+  --muted: #aaa0d8;
+  --cyan: #25e8ff;
+  --pink: #ff3fcf;
+  --gold: #ffc93c;
+  --mint: #3dffa6;
+  --violet: #7a5cff;
+  --font-display: 'Reem Kufi', 'Cairo', system-ui, sans-serif;
+  --font-body: 'Cairo', system-ui, sans-serif;
+  --font-digit: 'Orbitron', 'Courier New', monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(120% 55% at 50% -8%, rgba(255,63,207,.24), transparent 62%),
+    radial-gradient(90% 45% at 100% 100%, rgba(37,232,255,.16), transparent 62%),
+    radial-gradient(70% 40% at 0% 70%, rgba(122,92,255,.18), transparent 62%);
+  background-repeat: no-repeat;
+  color: var(--fg);
+  font: 400 16px/1.5 var(--font-body);
+  margin: 0;
+  padding-block: 16px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.app { max-width: 440px; margin-inline: auto; display: flex; flex-direction: column; gap: 18px; }
+
+/* header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 24px; margin: 0;
+  background: linear-gradient(90deg, var(--cyan), var(--pink) 55%, var(--gold));
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tools { display: flex; gap: 8px; }
+.icon-btn { width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--muted); display: grid; place-items: center; cursor: pointer; padding: 0; -webkit-tap-highlight-color: transparent; }
+.icon-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn[aria-pressed="true"] { color: var(--cyan); border-color: rgba(37,232,255,.55); background: rgba(37,232,255,.12); box-shadow: 0 0 18px rgba(37,232,255,.25); }
+.icon-btn .off { display: none; }
+.icon-btn[aria-pressed="false"] .on { display: none; }
+.icon-btn[aria-pressed="false"] .off { display: block; }
+button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+/* dhikr */
+.dhikr { text-align: center; font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 9vw, 42px); line-height: 1.3;
+  color: var(--gold); text-shadow: 0 0 24px rgba(255,201,60,.45); text-wrap: balance; margin: 0; min-height: 1.3em; }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: 600 14px/1 var(--font-body);
+  padding: 9px 14px; border-radius: 999px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.chip[aria-pressed="true"] { color: #fff; border-color: var(--cyan);
+  background: linear-gradient(135deg, rgba(37,232,255,.28), rgba(255,63,207,.28)); box-shadow: 0 0 18px rgba(37,232,255,.3); }
+
+/* stage */
+.stage { position: relative; width: min(88vw, 360px); aspect-ratio: 1; max-width: 100%; margin-inline: auto; }
+.stage svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.stage.done svg { animation: flash .65s ease-out; }
+@keyframes flash { 0% { filter: drop-shadow(0 0 0 rgba(61,255,166,0)); } 35% { filter: drop-shadow(0 0 24px rgba(61,255,166,.95)); } 100% { filter: drop-shadow(0 0 0 rgba(61,255,166,0)); } }
+#beads { transition: transform .2s cubic-bezier(.2,.8,.3,1); }
+#ring { transition: stroke-dashoffset .25s ease-out; }
+.tap { position: absolute; inset: 11%; border-radius: 50%; border: 0; padding: 0; cursor: pointer; color: var(--fg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; overflow: hidden;
+  background: radial-gradient(circle at 50% 28%, #4a35c4 0%, #241670 48%, #120a3f 100%);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.09), inset 0 -22px 44px rgba(37,232,255,.22), inset 0 20px 30px rgba(255,255,255,.07),
+    0 0 70px rgba(255,63,207,.32), 0 24px 50px rgba(0,0,0,.55); }
+.tap::before { content: ""; position: absolute; left: 14%; right: 14%; top: 5%; height: 34%; border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,0)); pointer-events: none; }
+.tap:active { box-shadow: inset 0 0 0 2px rgba(255,255,255,.12), inset 0 -10px 30px rgba(37,232,255,.35), 0 0 90px rgba(37,232,255,.45), 0 12px 30px rgba(0,0,0,.5); }
+.count { font-family: var(--font-digit); font-weight: 800; font-size: clamp(60px, 21vw, 100px); line-height: 1; font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 14px rgba(37,232,255,.9), 0 0 40px rgba(37,232,255,.55); }
+.hint { font-size: 14px; color: var(--muted); font-weight: 600; }
+.msg { min-height: 1.6em; margin: 0; text-align: center; color: var(--mint); font-weight: 700; font-size: 16px; }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 12px 6px; }
+.stat { text-align: center; min-width: 0; }
+.stat + .stat { border-inline-start: 1px solid var(--line); }
+.stat b { display: block; font-family: var(--font-digit); font-weight: 800; font-size: 22px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.s-r b { color: var(--gold); } .s-t b { color: var(--cyan); } .s-a b { color: var(--pink); }
+
+/* controls */
+.group { display: flex; flex-direction: column; gap: 6px; }
+.lbl { font-size: 13px; color: var(--muted); font-weight: 600; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; background: var(--surface); border: 1px solid var(--line); padding: 4px; border-radius: 16px; }
+.seg button { border: 0; background: transparent; color: var(--muted); font: 700 14px/1 var(--font-body); padding: 12px 4px; border-radius: 12px; cursor: pointer; min-width: 0; -webkit-tap-highlight-color: transparent; }
+.seg button[aria-checked="true"] { background: linear-gradient(135deg, var(--cyan), var(--violet)); color: #07031c; box-shadow: 0 0 18px rgba(37,232,255,.35); }
+.reset { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 15px; border-radius: 16px;
+  border: 1.5px solid var(--pink); background: rgba(255,63,207,.12); color: #ffd6f4; font: 700 17px/1 var(--font-body); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.reset svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.reset.armed { background: linear-gradient(135deg, var(--pink), #ff7a3f); color: #1c0420; border-color: transparent; box-shadow: 0 0 32px rgba(255,63,207,.55); }
+
+@media (prefers-reduced-motion: reduce) {
+  #beads, #ring { transition: none; }
+  .stage.done svg { animation: none; }
+}
+</style>
+</head>
+<body>
+
+
+<main class="app" dir="rtl" lang="ar">
+  <header class="top">
+    <h1 class="brand">السبحة الذكية</h1>
+    <div class="tools">
+      <button class="icon-btn" id="vibBtn" type="button" aria-pressed="true" aria-label="الاهتزاز" title="الاهتزاز" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3" width="8" height="18" rx="2"/><path d="M4 8v8M20 8v8"/></svg>
+      </button>
+      <button class="icon-btn" id="sndBtn" type="button" aria-pressed="true" aria-label="الصوت" title="الصوت">
+        <svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12"/></svg>
+        <svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <p class="dhikr" id="dhikr" aria-live="polite"></p>
+  <div class="chips" id="chips" role="group" aria-label="اختيار الذكر"></div>
+
+  <div class="stage" id="stage">
+    <svg viewBox="0 0 220 220" aria-hidden="true">
+      <defs>
+        <linearGradient id="rg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" style="stop-color:var(--cyan)"/>
+          <stop offset=".55" style="stop-color:var(--pink)"/>
+          <stop offset="1" style="stop-color:var(--gold)"/>
+        </linearGradient>
+      </defs>
+      <circle cx="110" cy="110" r="96" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="8"/>
+      <circle id="ring" cx="110" cy="110" r="96" fill="none" stroke="url(#rg)" stroke-width="8" stroke-linecap="round" transform="rotate(-90 110 110)"/>
+      <g id="beads" style="transform-origin:110px 110px"></g>
+    </svg>
+    <button class="tap" id="tap" type="button" aria-label="سبّح">
+      <span class="count" id="count">0</span>
+      <span class="hint">اضغط للتسبيح</span>
+    </button>
+  </div>
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+
+  <div class="stats">
+    <div class="stat s-r"><b id="stR">0</b><span>الدورات</span></div>
+    <div class="stat s-t"><b id="stT">33</b><span>الهدف</span></div>
+    <div class="stat s-a"><b id="stA">0</b><span>الإجمالي</span></div>
+  </div>
+
+  <div class="group">
+    <span class="lbl" id="lblT">الهدف في كل دورة</span>
+    <div class="seg" id="segT" role="radiogroup" aria-labelledby="lblT"></div>
+  </div>
+  <div class="group">
+    <span class="lbl" id="lblS">نمط الصوت</span>
+    <div class="seg" id="segS" role="radiogroup" aria-labelledby="lblS"></div>
+  </div>
+
+  <button class="reset" id="reset" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg>
+    <span id="resetTxt">تصفير العداد</span>
+  </button>
+</main>
+
+<script>
+(function () {
+  var DHIKR = ['سبحان الله', 'الحمد لله', 'الله أكبر', 'لا إله إلا الله', 'أستغفر الله', 'اللهم صلِّ على محمد'];
+  var TARGETS = [[33, '33'], [99, '99'], [100, '100'], [0, 'حر']];
+  var STYLES = [['wood', 'خشبي'], ['crystal', 'كريستال'], ['electro', 'إلكتروني']];
+  var KEY = 'tasbih-v1';
+  var R = 96, C = 2 * Math.PI * R;
+  var rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var st = { d: 0, items: DHIKR.map(function () { return { c: 0, r: 0, t: 0 }; }), target: 33, sound: true, vib: true, style: 'crystal' };
+  try {
+    var s = JSON.parse(localStorage.getItem(KEY));
+    if (s && Array.isArray(s.items) && s.items.length === DHIKR.length) {
+      s.items.forEach(function (x, i) {
+        var o = st.items[i];
+        if (x && isFinite(x.c) && isFinite(x.r) && isFinite(x.t)) { o.c = Math.max(0, x.c | 0); o.r = Math.max(0, x.r | 0); o.t = Math.max(0, x.t | 0); }
+      });
+      if (s.d >= 0 && s.d < DHIKR.length) st.d = s.d | 0;
+      if ([0, 33, 99, 100].indexOf(s.target) > -1) st.target = s.target;
+      if (typeof s.sound === 'boolean') st.sound = s.sound;
+      if (typeof s.vib === 'boolean') st.vib = s.vib;
+      if (STYLES.some(function (x) { return x[0] === s.style; })) st.style = s.style;
+    }
+  } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var stage = $('stage'), tapBtn = $('tap'), countEl = $('count'), ring = $('ring'), beads = $('beads'), msg = $('msg');
+  var angle = 0;
+
+  /* rosary beads: one large gold lead bead, the rest alternate colours */
+  var NS = 'http://www.w3.org/2000/svg', N = 40, pal = ['#25e8ff', '#ff3fcf', '#ffc93c', '#3dffa6'];
+  for (var i = 0; i < N; i++) {
+    var a = (i / N) * Math.PI * 2 - Math.PI / 2, c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', (110 + 105 * Math.cos(a)).toFixed(2));
+    c.setAttribute('cy', (110 + 105 * Math.sin(a)).toFixed(2));
+    c.setAttribute('r', i === 0 ? 5.4 : 3.2);
+    c.setAttribute('fill', i === 0 ? '#ffc93c' : pal[i % 4]);
+    c.setAttribute('opacity', i === 0 ? 1 : 0.9);
+    beads.appendChild(c);
+  }
+  ring.style.strokeDasharray = C.toFixed(2);
+
+  /* chips and segmented controls */
+  var chips = $('chips');
+  DHIKR.forEach(function (name, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = name;
+    b.addEventListener('click', function () { st.d = i; save(); render(); });
+    chips.appendChild(b);
+  });
+  function seg(host, list, get, set) {
+    list.forEach(function (it) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.setAttribute('role', 'radio'); b.textContent = it[1]; b.dataset.v = it[0];
+      b.addEventListener('click', function () { set(it[0]); save(); render(); });
+      host.appendChild(b);
+    });
+  }
+  seg($('segT'), TARGETS, null, function (v) { st.target = v; });
+  seg($('segS'), STYLES, null, function (v) { st.style = v; tick(7); });
+
+  /* audio */
+  var ctx = null;
+  function audio() {
+    if (!ctx) { try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) ctx = new AC(); } catch (e) {} }
+    if (ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+    return ctx;
+  }
+  function tone(type, f0, f1, t, dur, peak, dest) {
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(dest || ctx.destination);
+    o.start(t); o.stop(t + dur + 0.03);
+  }
+  function tick(n) {
+    if (!st.sound) return;
+    var c = audio(); if (!c) return; var t = c.currentTime;
+    if (st.style === 'wood') {
+      tone('sine', 820, 260, t, 0.09, 0.55);
+      tone('triangle', 1640, 520, t, 0.04, 0.12);
+    } else if (st.style === 'crystal') {
+      var sc = [880, 988, 1109, 1319, 1480], f = sc[n % 5];
+      tone('sine', f, f, t, 0.45, 0.28);
+      tone('sine', f * 2, f * 2, t, 0.25, 0.08);
+    } else {
+      var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200; lp.connect(c.destination);
+      tone('square', 660, 660, t, 0.06, 0.12, lp);
+      tone('square', 990, 990, t + 0.05, 0.06, 0.1, lp);
+    }
+  }
+  function doneSound() {
+    if (!st.sound) return;
+    var c = audio(); if (!c) return; var t = c.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) {
+      tone('triangle', f, f, t + i * 0.11, 0.55, 0.3);
+      tone('sine', f * 2, f * 2, t + i * 0.11, 0.35, 0.07);
+    });
+  }
+  function resetSound() {
+    if (!st.sound) return;
+    var c = audio(); if (!c) return; var t = c.currentTime;
+    var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800; lp.connect(c.destination);
+    tone('sawtooth', 700, 110, t, 0.35, 0.14, lp);
+  }
+  function buzz(p) { if (!st.vib) return; try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+
+  /* screen wake lock while counting */
+  var wl = null, wlBusy = false, tapped = false;
+  function lock() {
+    if (wl || wlBusy || !navigator.wakeLock) return;
+    wlBusy = true;
+    navigator.wakeLock.request('screen').then(function (l) { wl = l; l.addEventListener('release', function () { wl = null; }); }).catch(function () {}).then(function () { wlBusy = false; });
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && tapped) lock(); });
+
+  /* render */
+  var msgTimer = null;
+  function say(t) { msg.textContent = t; clearTimeout(msgTimer); if (t) msgTimer = setTimeout(function () { msg.textContent = ''; }, 2600); }
+  function render(hold) {
+    var it = st.items[st.d];
+    $('dhikr').textContent = DHIKR[st.d];
+    Array.prototype.forEach.call(chips.children, function (b, i) { b.setAttribute('aria-pressed', i === st.d ? 'true' : 'false'); });
+    Array.prototype.forEach.call($('segT').children, function (b) { b.setAttribute('aria-checked', String(+b.dataset.v === st.target)); });
+    Array.prototype.forEach.call($('segS').children, function (b) { b.setAttribute('aria-checked', String(b.dataset.v === st.style)); });
+    var shown = hold ? st.target : it.c;
+    countEl.textContent = shown;
+    var frac = hold ? 1 : (st.target ? Math.min(it.c / st.target, 1) : (it.c % 100) / 100);
+    ring.style.strokeDashoffset = (C * (1 - frac)).toFixed(2);
+    $('stR').textContent = it.r;
+    $('stT').textContent = st.target || '∞';
+    $('stA').textContent = it.t;
+    $('sndBtn').setAttribute('aria-pressed', String(st.sound));
+    $('vibBtn').setAttribute('aria-pressed', String(st.vib));
+    beads.style.transform = 'rotate(' + angle + 'deg)';
+  }
+
+  /* tapping */
+  function tap() {
+    audio(); tapped = true; lock();
+    var it = st.items[st.d];
+    it.c++; it.t++;
+    angle += 360 / N;
+    var completed = st.target && it.c >= st.target;
+    if (completed) { it.c = 0; it.r++; }
+    if (!rm) {
+      countEl.animate([{ transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 130, easing: 'ease-out' });
+      tapBtn.animate([{ transform: 'scale(.965)' }, { transform: 'scale(1)' }], { duration: 150, easing: 'ease-out' });
+    }
+    if (completed) {
+      render(true);
+      stage.classList.add('done');
+      setTimeout(function () { stage.classList.remove('done'); render(); }, 650);
+      doneSound(); buzz([60, 40, 60, 40, 140]);
+      say('أتممت ' + st.target + ' · الدورة ' + it.r);
+    } else {
+      render();
+      tick(it.c); buzz(12);
+    }
+    save();
+  }
+  tapBtn.addEventListener('pointerdown', function (e) { if (e.button !== 0) return; e.preventDefault(); tap(); });
+  tapBtn.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!e.repeat) tap(); }
+  });
+  tapBtn.addEventListener('keyup', function (e) { if (e.key === ' ' || e.key === 'Enter') e.preventDefault(); });
+  tapBtn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  /* toggles */
+  $('sndBtn').addEventListener('click', function () { st.sound = !st.sound; save(); render(); if (st.sound) tick(3); });
+  $('vibBtn').addEventListener('click', function () { st.vib = !st.vib; save(); render(); if (st.vib) buzz(30); });
+  if ('vibrate' in navigator) $('vibBtn').hidden = false;
+
+  /* reset needs a second press within 3 seconds */
+  var resetBtn = $('reset'), armed = false, armTimer = null;
+  function disarm() { armed = false; clearTimeout(armTimer); resetBtn.classList.remove('armed'); $('resetTxt').textContent = 'تصفير العداد'; }
+  resetBtn.addEventListener('click', function () {
+    if (!armed) {
+      armed = true; resetBtn.classList.add('armed'); $('resetTxt').textContent = 'اضغط مرة أخرى للتأكيد';
+      armTimer = setTimeout(disarm, 3000); return;
+    }
+    disarm();
+    var it = st.items[st.d];
+    it.c = 0; it.r = 0; it.t = 0;
+    resetSound(); buzz(40); save(); render();
+    say('تم تصفير العداد');
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
